@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 // Mengarahkan halaman utama (/) langsung ke Feed Postingan
 Route::get('/', function () {
-    return redirect()->route('posts.index');
+    return view('welcome');
 });
 
 /*
