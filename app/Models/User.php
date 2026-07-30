@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'avatar', 'bio'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -29,6 +29,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // --- RELASI INTERAKSI KONTEN ---
+
     public function posts()
     {
         return $this->hasMany(Post::class);
@@ -47,5 +50,25 @@ class User extends Authenticatable
     public function bookmarks()
     {
         return $this->hasMany(Bookmark::class);
+    }
+
+    // --- RELASI & HELPER FOLLOWER / FOLLOWING ---
+
+    // Akun-akun yang diikuti oleh user ini (Following)
+    public function followings()
+    {
+        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'following_id')->withTimestamps();
+    }
+
+    // Akun-akun yang mengikuti user ini (Followers)
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'follows', 'following_id', 'follower_id')->withTimestamps();
+    }
+
+    // Helper untuk mengecek apakah user ini sedang mengikuti user tertentu
+    public function isFollowing(User $user): bool
+    {
+        return $this->followings()->where('following_id', $user->id)->exists();
     }
 }
