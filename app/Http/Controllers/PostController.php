@@ -48,6 +48,19 @@ class PostController extends Controller
         return view('posts.show', compact('post'));
     }
 
+    // [SHARE] Membuat Link Share Postingan
+    public function share(Post $post)
+    {
+        $shareUrl = route('posts.show', $post->id);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Link postingan berhasil dibuat.',
+            'post_id' => $post->id,
+            'share_url' => $shareUrl,
+        ]);
+    }
+
     // [UPDATE] Menampilkan Form Edit Post
     public function edit(Post $post)
     {

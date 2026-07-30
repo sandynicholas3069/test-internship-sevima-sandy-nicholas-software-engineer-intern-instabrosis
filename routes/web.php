@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Mengarahkan halaman utama (/) langsung ke Feed Postingan
+// Mengarahkan halaman utama (/) langsung ke Landing Page Welcome
 Route::get('/', function () {
     return view('welcome');
 });
@@ -45,20 +45,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 2. FITUR POSTINGAN / FEED (Requirement B & E - Full CRUD & Hak Akses)
     // ==========================================
     // Otomatis mendaftarkan:
-    // - GET  /posts           (index   -> posts.index)
-    // - GET  /posts/create    (create  -> posts.create)
-    // - POST /posts           (store   -> posts.store)
-    // - GET  /posts/{post}    (show    -> posts.show)
-    // - GET  /posts/{post}/edit (edit  -> posts.edit)
+    // - GET   /posts           (index   -> posts.index)
+    // - GET   /posts/create    (create  -> posts.create)
+    // - POST  /posts           (store   -> posts.store)
+    // - GET   /posts/{post}    (show    -> posts.show)
+    // - GET   /posts/{post}/edit (edit  -> posts.edit)
     // - PUT/PATCH /posts/{post} (update -> posts.update)
     // - DELETE /posts/{post}  (destroy -> posts.destroy)
     Route::resource('posts', PostController::class);
 
     // ==========================================
-    // 3. FITUR LIKE & KOMENTAR (Requirement C & E)
+    // 3. FITUR LIKE, KOMENTAR, & SHARE
     // ==========================================
     // Toggle Like / Unlike
     Route::post('/posts/{post}/like', [LikeController::class, 'toggle'])->name('posts.like');
+
+    // Endpoint API / JSON untuk Share Post URL
+    Route::get('/posts/{post}/share', [PostController::class, 'share'])->name('posts.share');
 
     // CRUD Komentar
     Route::post('/posts/{post}/comments', [CommentController::class, 'store'])->name('comments.store');
