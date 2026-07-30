@@ -41,4 +41,15 @@ class Post extends Model
     {
         return $this->updated_at->gt($this->created_at);
     }
+
+    public function bookmarks()
+    {
+        return $this->hasMany(Bookmark::class);
+    }
+
+    // Helper untuk mengecek apakah user sudah menyimpan post ini
+    public function isBookmarkedBy(User $user)
+    {
+        return $this->bookmarks()->where('user_id', $user->id)->exists();
+    }
 }
