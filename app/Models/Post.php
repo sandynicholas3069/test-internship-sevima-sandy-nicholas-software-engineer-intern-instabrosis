@@ -35,4 +35,10 @@ class Post extends Model
     {
         return $this->likes()->where('user_id', $user->id)->exists();
     }
+
+    // Helper untuk mengecek apakah postingan pernah diedit
+    public function isEdited(): bool
+    {
+        return $this->updated_at->gt($this->created_at);
+    }
 }
