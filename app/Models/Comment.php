@@ -24,4 +24,10 @@ class Comment extends Model
     {
         return $this->belongsTo(Post::class);
     }
+
+    // Helper untuk mengecek apakah komentar pernah di-edit
+    public function isEdited(): bool
+    {
+        return $this->updated_at->gt($this->created_at);
+    }
 }
