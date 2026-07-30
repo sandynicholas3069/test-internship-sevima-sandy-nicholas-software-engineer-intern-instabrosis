@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Comment extends Model
 {
@@ -12,20 +14,39 @@ class Comment extends Model
     protected $fillable = [
         'user_id',
         'post_id',
+        'parent_id', // Ditambahkan untuk menyimpan ID komentar induk (balasan)
         'content',
     ];
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function post()
+    public function post(): BelongsTo
     {
         return $this->belongsTo(Post::class);
     }
 
-    // Helper untuk mengecek apakah komentar pernah di-edit
+    /**
+     * Relasi ke komentar induk (Parent)
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Comment::class, 'parent_id');
+    }
+
+    /**
+     * Relasi ke daftar balasan komentar (Replies / Children)
+     */
+    public function replies(): HasMany
+    {
+        return $this->hasMany(Comment::class, 'parent_id')->oldest();
+    }
+
+    /**
+     * Helper untuk mengecek apakah komentar pernah di-edit
+     */
     public function isEdited(): bool
     {
         return $this->updated_at->gt($this->created_at);

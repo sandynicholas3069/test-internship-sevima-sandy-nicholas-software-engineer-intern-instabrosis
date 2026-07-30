@@ -29,11 +29,16 @@ class BookmarkController extends Controller
         return back()->with('success', $message);
     }
 
-    // Menampilkan daftar postingan yang disimpan oleh user di profil
+    // Menampilkan daftar postingan yang disimpan oleh user
     public function index()
     {
-        $bookmarks = Auth::user()->bookmarks()->with('post.user')->latest()->get();
+        $user = Auth::user();
 
-        return view('bookmarks.index', compact('bookmarks'));
+        // Mengambil postingan yang di-bookmark beserta relasi user, likes, dan comments
+        $posts = Post::whereHas('bookmarks', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->with(['user', 'likes', 'comments'])->latest()->get();
+
+        return view('bookmarks.index', compact('posts'));
     }
 }

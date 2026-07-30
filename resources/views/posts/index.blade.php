@@ -1,12 +1,21 @@
 <x-app-layout>
     <div class="space-y-8 max-w-xl mx-auto">
         
-        <!-- Header Ringkas Feed -->
-        <div class="flex items-center justify-between pb-2 border-b border-gray-200/60 dark:border-gray-800">
-            <h1 class="text-xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600"></span>
-                Feed Terbaru
-            </h1>
+        <!-- Header Ringkas Feed dengan Bunderan Profil Sendiri -->
+        <div class="flex items-center justify-between pb-4 border-b border-gray-200/60 dark:border-gray-800">
+            <div class="flex items-center gap-3">
+                <!-- Bunderan Avatar Milik Sendiri (Klik untuk ke Profil) -->
+                <a href="{{ route('users.show', auth()->id()) }}" class="p-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 hover:scale-105 active:scale-95 transition-transform flex-shrink-0 shadow-md">
+                    <img src="{{ auth()->user()->avatar ? asset('storage/' . auth()->user()->avatar) : 'https://ui-avatars.com/api/?name='.urlencode(auth()->user()->name) }}" 
+                         alt="Profil Saya" 
+                         class="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-[#1a1c23]">
+                </a>
+                <h1 class="text-xl font-black tracking-tight text-gray-900 dark:text-white">
+                    Feed
+                </h1>
+            </div>
+            
+            <!-- Tombol Buat Postingan -->
             <a href="{{ route('posts.create') }}" class="inline-flex items-center gap-1.5 px-4 py-2 font-bold text-xs text-white bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 hover:from-purple-700 hover:via-pink-600 hover:to-orange-500 rounded-full shadow-md shadow-pink-500/20 hover:scale-105 active:scale-95 transition-all">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path></svg>
                 Buat Postingan
@@ -17,19 +26,35 @@
             <!-- Post Card Modern dengan Glassmorphism & Soft Elevation -->
             <article class="bg-white/90 dark:bg-[#1a1c23]/90 backdrop-blur-xl border border-gray-200/80 dark:border-gray-700/50 rounded-3xl shadow-[0_10px_30px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.3)] overflow-hidden transition-all duration-300 hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_15px_40px_rgba(0,0,0,0.4)]">
                 
-                <!-- Post Header -->
+                <!-- Post Header dengan Link Profil & Tombol Follow -->
                 <header class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800/60">
                     <div class="flex items-center gap-3">
-                        <!-- Avatar Ring Gradient -->
-                        <div class="p-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600">
+                        <!-- Avatar Ring Gradient (Link ke Profil User Pembuat Post) -->
+                        <a href="{{ route('users.show', $post->user->id) }}" class="p-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 hover:scale-105 transition-transform flex-shrink-0">
                             <img src="{{ $post->user->avatar ? asset('storage/' . $post->user->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($post->user->name) }}" 
                                  alt="{{ $post->user->name }}" 
                                  class="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-[#1a1c23]">
-                        </div>
+                        </a>
+                        
                         <div>
-                            <span class="font-extrabold text-sm text-gray-900 dark:text-gray-100 hover:text-pink-500 transition cursor-pointer">
-                                {{ $post->user->name }}
-                            </span>
+                            <div class="flex items-center gap-2">
+                                <!-- Nama User (Link ke Profil User Pembuat Post) -->
+                                <a href="{{ route('users.show', $post->user->id) }}" class="font-extrabold text-sm text-gray-900 dark:text-gray-100 hover:text-pink-500 transition">
+                                    {{ $post->user->name }}
+                                </a>
+
+                                <!-- Tombol Follow / Followed Kecil (Tampil jika bukan postingan milik sendiri) -->
+                                @if(auth()->id() !== $post->user_id)
+                                    <span class="text-gray-400 text-xs">•</span>
+                                    <form action="{{ route('users.follow', $post->user->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="text-xs font-black transition-colors {{ auth()->user()->isFollowing($post->user) ? 'text-gray-400 hover:text-red-500' : 'text-pink-500 hover:text-purple-600' }}">
+                                            {{ auth()->user()->isFollowing($post->user) ? 'Followed' : 'Follow' }}
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+
                             <div class="text-[11px] font-semibold text-gray-400 dark:text-gray-500 flex items-center gap-1">
                                 <span>{{ $post->created_at->diffForHumans(null, true, true) }}</span>
                                 @if(method_exists($post, 'isEdited') && $post->isEdited()) 
@@ -125,7 +150,9 @@
                     <!-- Caption -->
                     @if($post->caption)
                         <div class="text-sm mb-2 leading-relaxed text-gray-800 dark:text-gray-200">
-                            <span class="font-black mr-1.5 text-gray-900 dark:text-white">{{ $post->user->name }}</span>
+                            <a href="{{ route('users.show', $post->user->id) }}" class="font-black mr-1.5 text-gray-900 dark:text-white hover:text-pink-500 transition">
+                                {{ $post->user->name }}
+                            </a>
                             <span>{{ $post->caption }}</span>
                         </div>
                     @endif

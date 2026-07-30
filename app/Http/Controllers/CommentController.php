@@ -6,17 +6,23 @@ use App\Http\Requests\StoreCommentRequest;
 use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Comment;
 use App\Models\Post;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CommentController extends Controller
 {
-    // [CREATE] Menyimpan komentar baru
-    public function store(StoreCommentRequest $request, Post $post)
+    // [CREATE] Menyimpan komentar baru (Komentar Utama maupun Balasan)
+    public function store(Request $request, Post $post)
     {
-        $validated = $request->validated();
+        // Validasi input content & parent_id (opsional)
+        $validated = $request->validate([
+            'content' => ['required', 'string', 'max:1000'],
+            'parent_id' => ['nullable', 'exists:comments,id'],
+        ]);
 
         $post->comments()->create([
             'user_id' => Auth::id(),
+            'parent_id' => $request->parent_id ?? null,
             'content' => $validated['content'],
         ]);
 

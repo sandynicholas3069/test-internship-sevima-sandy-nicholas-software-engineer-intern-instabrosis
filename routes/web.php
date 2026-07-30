@@ -41,6 +41,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Halaman Profil Publik User lain (Ala Instagram)
+    Route::get('/users/{user}', [ProfileController::class, 'show'])->name('users.show');
+
     // ==========================================
     // 2. FITUR POSTINGAN / FEED (Requirement B & E - Full CRUD & Hak Akses)
     // ==========================================

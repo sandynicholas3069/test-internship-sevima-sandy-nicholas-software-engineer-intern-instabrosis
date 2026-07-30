@@ -72,9 +72,10 @@
                             <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">{{ auth()->user()->email }}</p>
                         </div>
 
-                        <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:text-pink-600 dark:hover:text-pink-400 transition">
+                        <!-- SUDAH DIUBAH: Mengarah ke Profil Publik Sendiri (users.show) -->
+                        <a href="{{ route('users.show', auth()->id()) }}" class="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:text-pink-600 dark:hover:text-pink-400 transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"></path></svg>
-                            Edit Profil
+                            Profil Saya
                         </a>
 
                         <form method="POST" action="{{ route('logout') }}">

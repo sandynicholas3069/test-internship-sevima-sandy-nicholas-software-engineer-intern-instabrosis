@@ -30,12 +30,14 @@
                 <!-- 1. HEADER USER -->
                 <header class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800/60 flex-shrink-0">
                     <div class="flex items-center gap-3">
-                        <div class="p-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600">
+                        <a href="{{ route('users.show', $post->user->id) }}" class="p-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 hover:scale-105 transition-transform flex-shrink-0">
                             <img src="{{ $post->user->avatar ? asset('storage/' . $post->user->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($post->user->name) }}" 
                                  alt="{{ $post->user->name }}" class="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-[#1a1c23]">
-                        </div>
+                        </a>
                         <div>
-                            <span class="font-extrabold text-sm text-gray-900 dark:text-gray-100 block">{{ $post->user->name }}</span>
+                            <a href="{{ route('users.show', $post->user->id) }}" class="font-extrabold text-sm text-gray-900 dark:text-gray-100 hover:text-pink-500 transition block">
+                                {{ $post->user->name }}
+                            </a>
                             <span class="text-[10px] text-gray-400 font-medium">{{ $post->created_at->diffForHumans() }}</span>
                         </div>
                     </div>
@@ -50,8 +52,8 @@
                 <!-- 2. BAGIAN CAPTION TERPISAH (Statis) -->
                 @if($post->caption)
                     <div class="p-4 bg-gray-50/60 dark:bg-gray-800/40 border-b border-gray-100 dark:border-gray-800/80 flex-shrink-0">
-                        <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Caption Penulis</div>
-                        <p class="text-sm text-gray-800 dark:text-gray-200 leading-relaxed break-words">
+                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Caption Penulis</div>
+                        <p class="text-xs text-gray-800 dark:text-gray-200 leading-relaxed break-words">
                             {{ $post->caption }}
                         </p>
                     </div>
@@ -63,24 +65,125 @@
                         Komentar ({{ $post->comments->count() }})
                     </div>
 
-                    @forelse ($post->comments as $comment)
-                        <div class="flex gap-3 group relative bg-gray-50/30 dark:bg-gray-800/20 p-2.5 rounded-2xl border border-gray-100/50 dark:border-gray-800/40">
-                            <img src="{{ $comment->user->avatar ? asset('storage/' . $comment->user->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($comment->user->name) }}" alt="Avatar" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
-                            <div class="flex-grow pr-6">
-                                <span class="font-extrabold text-sm text-gray-900 dark:text-gray-100 mr-1.5">{{ $comment->user->name }}</span>
-                                <span class="text-sm text-gray-800 dark:text-gray-200 break-words leading-relaxed">{{ $comment->content }}</span>
-                                <div class="text-[10px] text-gray-400 mt-1 font-semibold">{{ $comment->created_at->diffForHumans() }}</div>
-                            </div>
+                    <!-- Filter hanya komentar utama (parent_id is null) -->
+                    @forelse ($post->comments->whereNull('parent_id') as $comment)
+                        <div class="space-y-3" x-data="{ showReply: false, showEdit: false }">
                             
-                            <!-- Tombol Hapus Komentar -->
-                            @if(auth()->id() === $comment->user_id)
-                                <form action="{{ route('comments.destroy', $comment->id) }}" method="POST" class="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity" onsubmit="return confirm('Hapus komentar ini?');">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="p-1 text-gray-400 hover:text-red-500">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                    </button>
-                                </form>
+                            <!-- KOMENTAR UTAMA -->
+                            <div class="flex gap-2.5 group relative bg-gray-50/40 dark:bg-gray-800/20 p-3 rounded-2xl border border-gray-100/60 dark:border-gray-800/50">
+                                <a href="{{ route('users.show', $comment->user->id) }}" class="flex-shrink-0">
+                                    <img src="{{ $comment->user->avatar ? asset('storage/' . $comment->user->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($comment->user->name) }}" alt="Avatar" class="w-7 h-7 rounded-full object-cover">
+                                </a>
+                                
+                                <div class="flex-grow text-xs pr-2">
+                                    <!-- View Mode Komentar -->
+                                    <template x-if="!showEdit">
+                                        <div>
+                                            <p class="text-gray-900 dark:text-gray-100 leading-relaxed break-words">
+                                                <a href="{{ route('users.show', $comment->user->id) }}" class="font-extrabold hover:text-pink-500 mr-1.5">
+                                                    {{ $comment->user->name }}
+                                                </a>
+                                                <span>{{ $comment->content }}</span>
+                                            </p>
+
+                                            <!-- Action Bar Komentar (Waktu, Balas, Edit, Hapus) -->
+                                            <div class="flex items-center gap-3 mt-1.5 text-[10px] text-gray-400 font-bold">
+                                                <span>{{ $comment->created_at->diffForHumans(null, true, true) }}</span>
+                                                
+                                                <!-- Tombol Balas (Bisa untuk semua user) -->
+                                                <button @click="showReply = !showReply; if(showReply) $nextTick(() => $refs.replyInput.focus())" class="hover:text-pink-500 transition focus:outline-none">
+                                                    Balas
+                                                </button>
+
+                                                <!-- Tombol Edit & Hapus (Hanya Pemilik Komentar) -->
+                                                @if(auth()->id() === $comment->user_id)
+                                                    <button @click="showEdit = true" class="hover:text-blue-500 transition focus:outline-none">
+                                                        Edit
+                                                    </button>
+                                                    <form action="{{ route('comments.destroy', $comment->id) }}" method="POST" class="inline" onsubmit="return confirm('Hapus komentar ini?');">
+                                                        @csrf @method('DELETE')
+                                                        <button type="submit" class="hover:text-red-500 transition focus:outline-none">
+                                                            Hapus
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <!-- Form Edit Inline -->
+                                    <template x-if="showEdit">
+                                        <form action="{{ route('comments.update', $comment->id) }}" method="POST" class="mt-1 space-y-2">
+                                            @csrf @method('PATCH')
+                                            <input type="text" name="content" value="{{ $comment->content }}" required
+                                                   class="w-full text-xs px-3 py-1.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-pink-500">
+                                            <div class="flex items-center gap-2">
+                                                <button type="submit" class="text-[10px] font-bold text-white bg-pink-500 hover:bg-pink-600 px-3 py-1 rounded-lg">Simpan</button>
+                                                <button type="button" @click="showEdit = false" class="text-[10px] font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">Batal</button>
+                                            </div>
+                                        </form>
+                                    </template>
+
+                                    <!-- Form Balas Komentar (Nested Reply Input) -->
+                                    <div x-show="showReply" x-transition class="mt-2.5 pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
+                                        <form action="{{ route('comments.store', $post->id) }}" method="POST" class="flex items-center gap-2">
+                                            @csrf
+                                            <input type="hidden" name="parent_id" value="{{ $comment->id }}">
+                                            <input x-ref="replyInput" type="text" name="content" placeholder="Balas @ {{ $comment->user->name }}..." 
+                                                   class="w-full text-xs px-3 py-1.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-pink-500" required>
+                                            <button type="submit" class="text-xs font-black text-pink-500 hover:text-pink-600 focus:outline-none">Kirim</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUB-KOMENTAR / BALASAN (Menjorok Ke Dalam Ala Instagram) -->
+                            @if($comment->replies && $comment->replies->count() > 0)
+                                <div class="pl-6 ml-3 space-y-2 border-l-2 border-gray-200/70 dark:border-gray-800">
+                                    @foreach ($comment->replies as $reply)
+                                        <div class="flex gap-2 group relative bg-gray-50/20 dark:bg-gray-800/10 p-2 rounded-xl" x-data="{ showReplyEdit: false }">
+                                            <a href="{{ route('users.show', $reply->user->id) }}" class="flex-shrink-0">
+                                                <img src="{{ $reply->user->avatar ? asset('storage/' . $reply->user->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($reply->user->name) }}" alt="Avatar" class="w-6 h-6 rounded-full object-cover">
+                                            </a>
+                                            <div class="flex-grow text-xs">
+                                                <template x-if="!showReplyEdit">
+                                                    <div>
+                                                        <p class="text-gray-900 dark:text-gray-100 leading-relaxed break-words">
+                                                            <a href="{{ route('users.show', $reply->user->id) }}" class="font-extrabold hover:text-pink-500 mr-1">
+                                                                {{ $reply->user->name }}
+                                                            </a>
+                                                            <span>{{ $reply->content }}</span>
+                                                        </p>
+                                                        <div class="flex items-center gap-3 mt-1 text-[10px] text-gray-400 font-bold">
+                                                            <span>{{ $reply->created_at->diffForHumans(null, true, true) }}</span>
+                                                            @if(auth()->id() === $reply->user_id)
+                                                                <button @click="showReplyEdit = true" class="hover:text-blue-500 transition focus:outline-none">Edit</button>
+                                                                <form action="{{ route('comments.destroy', $reply->id) }}" method="POST" class="inline" onsubmit="return confirm('Hapus balasan ini?');">
+                                                                    @csrf @method('DELETE')
+                                                                    <button type="submit" class="hover:text-red-500 transition focus:outline-none">Hapus</button>
+                                                                </form>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </template>
+
+                                                <template x-if="showReplyEdit">
+                                                    <form action="{{ route('comments.update', $reply->id) }}" method="POST" class="mt-1 space-y-2">
+                                                        @csrf @method('PATCH')
+                                                        <input type="text" name="content" value="{{ $reply->content }}" required
+                                                               class="w-full text-xs px-2.5 py-1 rounded-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white">
+                                                        <div class="flex items-center gap-2">
+                                                            <button type="submit" class="text-[10px] font-bold text-white bg-pink-500 px-2.5 py-0.5 rounded-md">Simpan</button>
+                                                            <button type="button" @click="showReplyEdit = false" class="text-[10px] font-bold text-gray-500">Batal</button>
+                                                        </div>
+                                                    </form>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
                             @endif
+
                         </div>
                     @empty
                         <div class="h-full flex flex-col items-center justify-center text-center text-gray-400 py-8">
@@ -93,7 +196,7 @@
                     @endforelse
                 </div>
 
-                <!-- 4. BOTTOM ACTION BOX & INPUT KOMENTAR -->
+                <!-- 4. BOTTOM ACTION BOX & INPUT KOMENTAR UTAMA -->
                 <div class="border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0">
                     
                     <div class="p-4 pb-2">
@@ -136,7 +239,7 @@
                         <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-wide">{{ $post->created_at->translatedFormat('j F Y') }}</p>
                     </div>
 
-                    <!-- Input Komentar Bawah -->
+                    <!-- Input Komentar Utama Bawah -->
                     <div class="border-t border-gray-100 dark:border-gray-800 p-4 bg-white dark:bg-gray-900">
                         <form action="{{ route('comments.store', $post->id) }}" method="POST" class="flex items-center gap-3">
                             @csrf

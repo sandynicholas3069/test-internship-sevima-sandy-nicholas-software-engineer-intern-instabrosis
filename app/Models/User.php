@@ -3,19 +3,38 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'avatar', 'bio'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'avatar',
+        'bio',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -30,45 +49,75 @@ class User extends Authenticatable
         ];
     }
 
-    // --- RELASI INTERAKSI KONTEN ---
+    // ==========================================
+    // RELASI MODEL
+    // ==========================================
 
-    public function posts()
+    /**
+     * Postingan yang dibuat oleh user
+     */
+    public function posts(): HasMany
     {
         return $this->hasMany(Post::class);
     }
 
-    public function comments()
+    /**
+     * Komentar yang dibuat oleh user
+     */
+    public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
     }
 
-    public function likes()
+    /**
+     * Like yang diberikan oleh user
+     */
+    public function likes(): HasMany
     {
         return $this->hasMany(Like::class);
     }
 
-    public function bookmarks()
+    /**
+     * Postingan yang di-bookmark / disimpan oleh user
+     */
+    public function bookmarks(): BelongsToMany
     {
-        return $this->hasMany(Bookmark::class);
+        return $this->belongsToMany(Post::class, 'bookmarks')->withTimestamps();
     }
 
-    // --- RELASI & HELPER FOLLOWER / FOLLOWING ---
+    // ==========================================
+    // RELASI SOCIAL GRAPH (FOLLOWERS & FOLLOWING)
+    // ==========================================
 
-    // Akun-akun yang diikuti oleh user ini (Following)
-    public function followings()
-    {
-        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'following_id')->withTimestamps();
-    }
-
-    // Akun-akun yang mengikuti user ini (Followers)
-    public function followers()
+    /**
+     * Pengguna yang MENGIKUTI user ini (Followers)
+     */
+    public function followers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'follows', 'following_id', 'follower_id')->withTimestamps();
     }
 
-    // Helper untuk mengecek apakah user ini sedang mengikuti user tertentu
+    /**
+     * Pengguna yang DIIKUTI oleh user ini (Following)
+     */
+    public function following(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'following_id')->withTimestamps();
+    }
+
+    /**
+     * Alias untuk method following() agar mendukung pemanggilan followings()
+     */
+    public function followings(): BelongsToMany
+    {
+        return $this->following();
+    }
+
+    /**
+     * Helper function untuk mengecek apakah user ini sudah mengikuti user tertentu
+     */
     public function isFollowing(User $user): bool
     {
-        return $this->followings()->where('following_id', $user->id)->exists();
+        return $this->following()->where('following_id', $user->id)->exists();
     }
 }
